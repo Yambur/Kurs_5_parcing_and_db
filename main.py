@@ -1,8 +1,9 @@
+import os
 from src.config import config
 from src.dbmanager import DBManager
 from src.hh_api import HH_vacancy
 
-params = config()
+params = config(filename=os.path.abspath('database.ini'))
 db = DBManager(params)
 db.create_db()
 db.create_tables()

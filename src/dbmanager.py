@@ -5,7 +5,7 @@ class DBManager:
 
     def __init__(self, params):
         self.params = params
-        self.conn = psycopg2.connect(db_name='postgres', **self.params)
+        self.conn = psycopg2.connect(dbname='postgres', **self.params)
 
     def create_db(self) -> None:
         """Создание базы данных"""
@@ -20,17 +20,17 @@ class DBManager:
 
     def create_tables(self):
         """Создание таблиц"""
-        self.conn = psycopg2.connect(db_name='hh', **self.params)
+        self.conn = psycopg2.connect(dbname='hh', **self.params)
         cursor = self.conn.cursor()
         cursor.execute('''
-        CREATE TABLES companies (
-        id INTEGER PRIMARY KEY,
+        CREATE TABLE companies (
+        id SERIAL PRIMARY KEY,
         company text,
         url_vacancies text)
         ''')
         cursor.execute('''
-        CREATE TABLES vacancies (
-        id INTEGER PRIMARY KEY,
+        CREATE TABLE vacancies (
+        id SERIAL PRIMARY KEY,
         vacancy text,
         salary integer,
         url text,
@@ -42,7 +42,7 @@ class DBManager:
 
     def connection_db(self):
         """Метод для подключения к БД"""
-        return psycopg2.connect(db_name='hh', **self.params)
+        return psycopg2.connect(dbname='hh', **self.params)
 
     def close_connection_db(self):
         """Метод для закрытия БД"""
@@ -50,28 +50,33 @@ class DBManager:
         connection.close()
 
     def get_companies_and_vacancies_count(self):
-        """Список компаний и количество вакансий у каждой компании."""
+        """Список компаний и количество вакансий у каждой компании"""
         cur = self.connection_db().cursor()
-        cur.execute('''"SELECT employer, COUNT(*) AS vacancies_count FROM vacancies GROUP BY employer''')
+        cur.execute('''SELECT c.id, c.company, c.url_vacancies, COUNT(v.id) AS vacancy_count
+        FROM companies c
+        LEFT JOIN vacancies v ON c.id = v.id_company
+        GROUP BY c.id, c.company, c.url_vacancies;''')
         cur.close()
         return cur.fetchall
 
     def get_all_vacancies(self):
-        """Возвращает все вакансии из базы данных."""
+        """Возвращает все вакансии из базы данных"""
         cur = self.connection_db().cursor()
         cur.execute('''SELECT * FROM vacancies''')
         return cur.fetchall
 
     def get_avg_salary(self):
-        """Возвращает среднюю зарплату всех вакансий, где зарплата указана."""
+        """Возвращает среднюю зарплату всех вакансий, где зарплата указана"""
         cur = self.connection_db().cursor()
-        cur.execute('''SELECT AVG(salary) AS avg_salary FROM vacancies WHERE salary IS NOT NULL''')
+        cur.execute('''SELECT AVG(salary) FROM vacancies WHERE salary IS NOT NULL''')
         return cur.fetchall
 
     def get_vacancies_with_higher_salary(self):
-        """Возвращает все вакансии, у которых зарплата выше средней зарплаты."""
+        """Возвращает все вакансии, у которых зарплата выше средней зарплаты"""
         cur = self.connection_db().cursor()
-        cur.execute('''SELECT * FROM vacancies WHERE salary > %s''')
+        cur.execute('''SELECT * 
+        FROM vacancies 
+        WHERE salary > (SELECT AVG(salary) FROM vacancies WHERE salary IS NOT NULL)''')
         return cur.fetchall
 
     def get_vacancies_with_keyword(self, keyword):
@@ -83,9 +88,11 @@ class DBManager:
     def insert_data(self, company):
         conn = self.connection_db()
         cur = conn.cursor()
-        cur.execute(f'INSERT INTO companies (company, url_vacancies) VALUES ({company["company"]},{company["url_vacancies"]}) RETURNING id')
+        query = "INSERT INTO companies (company, url_vacancies) VALUES (%s, %s) RETURNING id"
+        cur.execute(query, (company["company"], company["url_vacancies"]))
         data = cur.fetchone()
         for vacancy in company["vacancies"]:
-            cur.execute(f'INSERT INTO vacancies (vacancy, salary, url, id_company) VALUES ({vacancy["vacancy"]},{vacancy["salary"]},{vacancy["url"]},{data[0]})')
+            query = "INSERT INTO vacancies (vacancy, salary, url, id_company) VALUES (%s, %s, %s, %s)"
+            cur.execute(query, (vacancy["vacancy"], vacancy["salary"], vacancy["url"], data))
         conn.commit()
         cur.close()
