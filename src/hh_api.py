@@ -5,6 +5,7 @@ import json
 class HH_vacancy():
     HH_COMPANY = "https://api.hh.ru/employers"
     """Получает данные о работодателях и вакансиях с помощью API HeadHunter."""
+
     def get_companies(self):
         info_companies = []
         company_id_list = [
@@ -23,8 +24,8 @@ class HH_vacancy():
             data = responce.json()
             info_companies.append(
                 {
-                    'company': data['items'][0]['name'],
-                    'url_vacancies': data['items'][0]['vacancies_url']
+                    'company': data['name'],
+                    'url_vacancies': data['vacancies_url']
                 }
             )
         return info_companies
@@ -47,4 +48,3 @@ class HH_vacancy():
                         }
                     )
         return companies
-
