@@ -9,6 +9,12 @@ db.create_db()
 db.create_tables()
 hh = HH_vacancy()
 company_vacancies = hh.get_vacancies()
-# [{company: name, url_vacancies: url, vacancies: [{vacancy: name, url: url_vacancy, salary: salary},{},{}]},{},{}]
+
 for company in company_vacancies:
     db.insert_data(company)
+print(db.get_companies_and_vacancies_count())
+print(db.get_all_vacancies())
+print(db.get_avg_salary())
+print(db.get_vacancies_with_higher_salary())
+keyword = input('Введите ключевое слово ')
+print(db.get_vacancies_with_keyword(keyword))
