@@ -15,7 +15,6 @@ class DBManager:
         print('Удаляем старую базу данных')
         cursor.execute('CREATE DATABASE hh')
         print("Создали базу данных")
-        cursor.close()
         self.conn.close()
 
     def create_tables(self):
@@ -37,7 +36,6 @@ class DBManager:
         id_company int REFERENCES companies(id))
         ''')
         self.conn.commit()
-        cursor.close()
         self.conn.close()
 
     def connection_db(self):
@@ -56,20 +54,19 @@ class DBManager:
         FROM companies c
         LEFT JOIN vacancies v ON c.id = v.id_company
         GROUP BY c.id, c.company, c.url_vacancies;''')
-        cur.close()
-        return cur.fetchall
+        return cur.fetchall()
 
     def get_all_vacancies(self):
         """Возвращает все вакансии из базы данных"""
         cur = self.connection_db().cursor()
         cur.execute('''SELECT * FROM vacancies''')
-        return cur.fetchall
+        return cur.fetchall()
 
     def get_avg_salary(self):
         """Возвращает среднюю зарплату всех вакансий, где зарплата указана"""
         cur = self.connection_db().cursor()
         cur.execute('''SELECT AVG(salary) FROM vacancies WHERE salary IS NOT NULL''')
-        return cur.fetchall
+        return cur.fetchall()
 
     def get_vacancies_with_higher_salary(self):
         """Возвращает все вакансии, у которых зарплата выше средней зарплаты"""
@@ -77,11 +74,11 @@ class DBManager:
         cur.execute('''SELECT * 
         FROM vacancies 
         WHERE salary > (SELECT AVG(salary) FROM vacancies WHERE salary IS NOT NULL)''')
-        return cur.fetchall
+        return cur.fetchall()
 
     def get_vacancies_with_keyword(self, keyword):
         cur = self.connection_db().cursor()
-        cur.execute(f'''SELECT * FROM vacancies WHERE vacancy_name LIKE "%{keyword}%"''')
+        cur.execute(f'''SELECT * FROM vacancies WHERE vacancy LIKE \'%{keyword}%\'''')
         result = cur.fetchall()
         return result
 
